@@ -1,22 +1,23 @@
 "use client";
 
-import { forwardRef } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { forwardRef, useState } from "react";
+import { Eye, EyeOff, X } from "lucide-react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
+  clearable?: boolean;
+  onClear?: () => void;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, type, className, ...props }, ref) => {
+  ({ label, error, type, className, clearable, onClear, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === "password";
 
     return (
       <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-charcoal-700">
+        <label className="block text-sm text-charcoal-500">
           {label}
         </label>
         <div className="relative">
@@ -24,16 +25,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={isPassword && showPassword ? "text" : type}
             className={`
-              w-full rounded-lg border border-charcoal-100 bg-white px-4 py-3 text-sm
+              w-full rounded-lg border border-charcoal-200 bg-white px-4 py-3 text-sm
               text-charcoal-900 placeholder:text-charcoal-300
               outline-none transition-colors
               focus:border-primary focus:ring-2 focus:ring-primary/20
               ${error ? "border-error focus:border-error focus:ring-error/20" : ""}
-              ${isPassword ? "pr-12" : ""}
+              ${isPassword || clearable ? "pr-12" : ""}
               ${className ?? ""}
             `}
             {...props}
           />
+          {clearable && !isPassword && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal-300 hover:text-charcoal-500 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
           {isPassword && (
             <button
               type="button"

@@ -3,11 +3,12 @@
 :root {
   --background: #FBFCFF;
   --foreground: #1E1E1E;
-  --primary: #FF6C00;
-  --primary-hover: #E56100;
-  --primary-light: #FFE2CC;
+  --primary: #219F56;
+  --primary-hover: #1A8545;
+  --primary-light: #E8F5EE;
   --charcoal-50: #F2F2F2;
   --charcoal-100: #E5E5E5;
+  --charcoal-200: #C9C9C9;
   --charcoal-300: #B0B0B0;
   --charcoal-500: #7D7D7D;
   --charcoal-700: #474747;
@@ -24,16 +25,18 @@
   --color-primary-light: var(--primary-light);
   --color-charcoal-50: var(--charcoal-50);
   --color-charcoal-100: var(--charcoal-100);
+  --color-charcoal-200: var(--charcoal-200);
   --color-charcoal-300: var(--charcoal-300);
   --color-charcoal-500: var(--charcoal-500);
   --color-charcoal-700: var(--charcoal-700);
   --color-charcoal-900: var(--charcoal-900);
   --color-error: var(--error);
   --color-success: var(--success);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Satoshi", sans-serif;
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(180deg, #E9F5EE 0%, #FBFCFF 61.46%);
+  min-height: 100vh;
   color: var(--foreground);
 }

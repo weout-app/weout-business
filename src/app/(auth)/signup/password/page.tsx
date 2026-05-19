@@ -2,45 +2,42 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthLayout } from "@/components/auth-layout";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
+import { StepIndicator } from "@/components/step-indicator";
 import { Check, X } from "lucide-react";
+import { signup } from "@/lib/api";
 
 const passwordSchema = z
   .object({
     password: z
       .string()
-      .min(8, "At least 8 characters")
-      .regex(/[A-Z]/, "At least one uppercase letter")
-      .regex(/[0-9]/, "At least one number"),
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Al menos una letra mayúscula")
+      .regex(/[0-9]/, "Al menos un número"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
 
 type PasswordForm = z.infer<typeof passwordSchema>;
 
-function PasswordRule({
-  met,
-  label,
-}: {
-  met: boolean;
-  label: string;
-}) {
+function PasswordRule({ met, label }: { met: boolean; label: string }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       {met ? (
-        <Check size={14} className="text-success" />
+        <Check size={14} className="text-primary" />
       ) : (
         <X size={14} className="text-charcoal-300" />
       )}
-      <span className={met ? "text-success" : "text-charcoal-500"}>
+      <span className={met ? "text-primary" : "text-charcoal-500"}>
         {label}
       </span>
     </div>
@@ -49,6 +46,7 @@ function PasswordRule({
 
 export default function SignupPasswordPage() {
   const router = useRouter();
+  const [apiError, setApiError] = useState("");
   const {
     register,
     handleSubmit,
@@ -61,77 +59,74 @@ export default function SignupPasswordPage() {
   const password = watch("password", "");
 
   async function onSubmit(data: PasswordForm) {
-    // TODO: combine with contact data and call weout-backend signup endpoint
-    const contact = sessionStorage.getItem("signup_contact");
-    console.log("Signup:", { ...JSON.parse(contact || "{}"), password: data.password });
-    sessionStorage.removeItem("signup_contact");
-    router.push("/signup/verify");
+    setApiError("");
+    const contactRaw = sessionStorage.getItem("signup_contact");
+    if (!contactRaw) {
+      router.push("/signup");
+      return;
+    }
+
+    const contact = JSON.parse(contactRaw);
+
+    try {
+      await signup({
+        ...contact,
+        password: data.password,
+      });
+      sessionStorage.removeItem("signup_contact");
+      router.push("/signup/verify");
+    } catch (err: any) {
+      setApiError(err.message || "Error al crear la cuenta");
+    }
   }
 
   return (
     <AuthLayout
-      title="Create a password"
-      subtitle="Secure your business account"
+      title={<>Crear cuenta de <span className="italic text-primary">Socio</span></>}
+      subtitle="Asegura tu cuenta de negocio"
     >
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
-            <Check size={16} />
-          </div>
-          <span className="text-sm text-charcoal-500">Details</span>
-        </div>
-        <div className="flex-1 h-px bg-primary" />
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
-            2
-          </div>
-          <span className="text-sm font-medium text-charcoal-900">Password</span>
-        </div>
-        <div className="flex-1 h-px bg-charcoal-100" />
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-8 rounded-full bg-charcoal-100 text-charcoal-300 flex items-center justify-center text-sm font-semibold">
-            3
-          </div>
-          <span className="text-sm text-charcoal-300">Verify</span>
-        </div>
-      </div>
+      <StepIndicator currentStep={2} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {apiError && (
+          <p className="text-sm text-error bg-error/10 rounded-lg px-4 py-2">{apiError}</p>
+        )}
         <Input
-          label="Password"
+          label="Contraseña"
           type="password"
-          placeholder="Create a strong password"
+          placeholder="Crea una contraseña segura"
           error={errors.password?.message}
           {...register("password")}
         />
 
         <div className="space-y-1.5 pb-1">
-          <PasswordRule met={password.length >= 8} label="At least 8 characters" />
-          <PasswordRule met={/[A-Z]/.test(password)} label="One uppercase letter" />
-          <PasswordRule met={/[0-9]/.test(password)} label="One number" />
+          <PasswordRule met={password.length >= 8} label="Mínimo 8 caracteres" />
+          <PasswordRule met={/[A-Z]/.test(password)} label="Una letra mayúscula" />
+          <PasswordRule met={/[0-9]/.test(password)} label="Un número" />
         </div>
 
         <Input
-          label="Confirm password"
+          label="Confirmar contraseña"
           type="password"
-          placeholder="Re-enter your password"
+          placeholder="Vuelve a ingresar tu contraseña"
           error={errors.confirmPassword?.message}
           {...register("confirmPassword")}
         />
 
-        <Button type="submit" loading={isSubmitting}>
-          Create account
-        </Button>
+        <div className="pt-2">
+          <Button type="submit" loading={isSubmitting}>
+            Crear cuenta
+          </Button>
+        </div>
       </form>
 
       <p className="mt-6 text-center text-sm text-charcoal-500">
-        Already have an account?{" "}
+        ¿Ya tienes una cuenta?{" "}
         <Link
           href="/login"
           className="font-semibold text-primary hover:text-primary-hover transition-colors"
         >
-          Sign in
+          Iniciar sesión
         </Link>
       </p>
     </AuthLayout>
