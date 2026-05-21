@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@mapbox/mapbox-gl-geocoder": "^5.1.2",
+    "@mapbox/search-js-core": "^1.5.1",
+    "@mapbox/search-js-react": "^1.5.1",
     "lucide-react": "^1.16.0",
+    "mapbox-gl": "^3.24.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -19,6 +23,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/mapbox-gl": "^3.5.0",
+    "@types/mapbox__mapbox-gl-geocoder": "^5.1.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

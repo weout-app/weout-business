@@ -2,107 +2,83 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { VerificationStepper } from "@/components/verification-stepper";
-import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { Check } from "lucide-react";
-
-const affiliations = [
-  { id: "independent", label: "Independiente", description: "No pertenezco a ninguna cadena o red" },
-  { id: "chain", label: "Cadena hotelera", description: "Parte de una cadena de hoteles/hosteles" },
-  { id: "network", label: "Red de turismo", description: "Miembro de una red o asociación turística" },
-  { id: "franchise", label: "Franquicia", description: "Operamos bajo una franquicia" },
-  { id: "government", label: "Entidad gubernamental", description: "Asociado a un ente de turismo oficial" },
-];
+import { VerificationLayout } from "@/components/verification-layout";
 
 export default function AffiliationPage() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
+
+  const [isAffiliated, setIsAffiliated] = useState<boolean | null>(() => {
+    if (typeof window === "undefined") return null;
     const saved = sessionStorage.getItem("verification_affiliation");
-    return saved ? JSON.parse(saved).type : "";
-  });
-  const [affiliationName, setAffiliationName] = useState(() => {
-    if (typeof window === "undefined") return "";
-    const saved = sessionStorage.getItem("verification_affiliation");
-    return saved ? JSON.parse(saved).name : "";
+    if (!saved) return null;
+    return JSON.parse(saved).isAffiliated;
   });
 
-  function onSubmit() {
+  const [name, setName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const saved = sessionStorage.getItem("verification_affiliation");
+    return saved ? JSON.parse(saved).name || "" : "";
+  });
+
+  function onNext() {
     sessionStorage.setItem(
       "verification_affiliation",
-      JSON.stringify({ type: selected, name: affiliationName })
+      JSON.stringify({ isAffiliated, name: isAffiliated ? name : "" })
     );
     router.push("/onboarding/verification/description");
   }
 
   return (
-    <div className="max-w-xl mx-auto px-6 py-10">
-      <VerificationStepper currentStep={4} />
+    <VerificationLayout
+      onBack={() => router.push("/onboarding/verification/verify")}
+      onNext={onNext}
+      nextDisabled={isAffiliated === null || (isAffiliated === true && !name.trim())}
+    >
+      <h1 className="text-2xl font-bold text-charcoal-900">
+        Afiliación del negocio
+      </h1>
+      <p className="mt-2 text-sm text-charcoal-500">
+        ¿Tu negocio pertenece a alguna cadena, red o asociación?
+      </p>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-bold text-charcoal-900">
-          Afiliación del negocio
-        </h2>
-        <p className="mt-1 text-sm text-charcoal-500">
-          ¿Tu negocio pertenece a alguna cadena, red o asociación?
-        </p>
+      <div className="mt-8 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setIsAffiliated(true)}
+          className={`flex-1 rounded-xl border py-4 text-sm font-semibold transition-all ${
+            isAffiliated === true
+              ? "border-primary bg-primary text-white"
+              : "border-charcoal-100 bg-white text-charcoal-500 hover:border-charcoal-300"
+          }`}
+        >
+          Sí
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsAffiliated(false)}
+          className={`flex-1 rounded-xl border py-4 text-sm font-semibold transition-all ${
+            isAffiliated === false
+              ? "border-primary bg-primary text-white"
+              : "border-charcoal-100 bg-white text-charcoal-500 hover:border-charcoal-300"
+          }`}
+        >
+          No
+        </button>
       </div>
 
-      <div className="mt-6 space-y-3">
-        {affiliations.map((aff) => (
-          <button
-            key={aff.id}
-            type="button"
-            onClick={() => setSelected(aff.id)}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
-              selected === aff.id
-                ? "border-primary bg-primary-light/50"
-                : "border-charcoal-200 bg-white hover:border-charcoal-300"
-            }`}
-          >
-            <div
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                selected === aff.id
-                  ? "border-primary bg-primary"
-                  : "border-charcoal-200"
-              }`}
-            >
-              {selected === aff.id && <Check size={14} className="text-white" />}
-            </div>
-            <div>
-              <p className="font-medium text-sm text-charcoal-900">
-                {aff.label}
-              </p>
-              <p className="text-xs text-charcoal-500">{aff.description}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {selected && selected !== "independent" && (
-        <div className="mt-4">
-          <Input
-            label="Nombre de la cadena, red o franquicia"
+      {isAffiliated && (
+        <div className="mt-5 space-y-2">
+          <label className="block text-sm font-medium text-charcoal-900">
+            Nombre de la cadena, red o asociación
+          </label>
+          <input
+            className="w-full rounded-xl border border-charcoal-100 bg-white px-4 py-3.5 text-sm text-charcoal-900 placeholder:text-charcoal-300 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="ej. Selina, Colombian Highlands"
-            value={affiliationName}
-            onChange={(e) => setAffiliationName(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
       )}
-
-      <div className="flex gap-3 pt-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/onboarding/verification/verify")}
-        >
-          Atrás
-        </Button>
-        <Button onClick={onSubmit} disabled={!selected}>
-          Continuar
-        </Button>
-      </div>
-    </div>
+    </VerificationLayout>
   );
 }

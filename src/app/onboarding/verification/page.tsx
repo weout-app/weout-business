@@ -4,28 +4,23 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { VerificationStepper } from "@/components/verification-stepper";
-import { Input } from "@/components/input";
-import { Button } from "@/components/button";
+import { VerificationLayout } from "@/components/verification-layout";
 
 const schema = z.object({
   businessName: z.string().min(2, "Nombre del negocio obligatorio"),
   businessType: z.string().min(1, "Selecciona un tipo de negocio"),
-  contactName: z.string().min(2, "Nombre de contacto obligatorio"),
-  email: z.email("Correo electrónico válido"),
-  phone: z.string().min(7, "Número de teléfono válido"),
-  website: z.string().optional(),
+  acceptTerms: z.literal(true, { message: "Debes aceptar los términos y condiciones" }),
 });
 
 type FormData = z.infer<typeof schema>;
 
 const businessTypes = [
-  { value: "hostel", label: "Hostel" },
-  { value: "tour_guide", label: "Guía turístico" },
-  { value: "hotel", label: "Hotel / Alojamiento" },
-  { value: "agency", label: "Agencia de viajes" },
-  { value: "restaurant", label: "Restaurante / Bar" },
-  { value: "other", label: "Otro" },
+  { value: "hostel", label: "Hostel", description: "Un lugar para viajeros, con habitaciones compartidas o privadas y espacios para conocer a otros." },
+  { value: "tour_guide", label: "Guía turístico", description: "Ofreces tours y experiencias guiadas para viajeros." },
+  { value: "hotel", label: "Hotel / Alojamiento", description: "Alojamiento con servicios para huéspedes." },
+  { value: "agency", label: "Agencia de viajes", description: "Organizas viajes y experiencias para grupos o individuos." },
+  { value: "restaurant", label: "Restaurante / Bar", description: "Espacio gastronómico o de entretenimiento." },
+  { value: "other", label: "Otro", description: "Otro tipo de negocio turístico." },
 ];
 
 export default function BusinessDetailsPage() {
@@ -33,6 +28,7 @@ export default function BusinessDetailsPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -43,88 +39,86 @@ export default function BusinessDetailsPage() {
     })(),
   });
 
+  const selectedType = watch("businessType");
+
   function onSubmit(data: FormData) {
     sessionStorage.setItem("verification_details", JSON.stringify(data));
     router.push("/onboarding/verification/location");
   }
 
+  const selected = businessTypes.find((t) => t.value === selectedType);
+
   return (
-    <div className="max-w-xl mx-auto px-6 py-10">
-      <VerificationStepper currentStep={1} />
+    <form id="step-form" onSubmit={handleSubmit(onSubmit)}>
+      <VerificationLayout
+        onBack={() => router.push("/dashboard")}
+        onNext={() => (document.getElementById("step-form") as HTMLFormElement)?.requestSubmit()}
+        nextDisabled={isSubmitting}
+      >
+        <h1 className="text-2xl font-bold text-charcoal-900">
+          ¡Vamos a conocer tu negocio!
+        </h1>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-bold text-charcoal-900">
-          Datos del negocio
-        </h2>
-        <p className="mt-1 text-sm text-charcoal-500">
-          Información básica sobre tu negocio.
-        </p>
-      </div>
+        <div className="mt-8 space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-charcoal-900">
+              Nombre del negocio
+            </label>
+            <input
+              className="w-full rounded-xl border border-charcoal-200 bg-white px-4 py-3.5 text-sm text-charcoal-900 placeholder:text-charcoal-300 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+              placeholder="Ingresa el nombre de tu negocio"
+              {...register("businessName")}
+            />
+            {errors.businessName && (
+              <p className="text-xs text-error">{errors.businessName.message}</p>
+            )}
+          </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-        <Input
-          label="Nombre del negocio"
-          placeholder="ej. Sunset Hostel Cartagena"
-          error={errors.businessName?.message}
-          {...register("businessName")}
-        />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-charcoal-900">
+              Tipo de negocio
+            </label>
+            <div className="relative">
+              <select
+                className="w-full appearance-none rounded-xl border border-charcoal-200 bg-white px-4 py-3.5 pr-10 text-sm text-charcoal-900 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                {...register("businessType")}
+              >
+                <option value="">Selecciona una opción</option>
+                {businessTypes.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </div>
+            {selected && (
+              <p className="text-xs text-charcoal-500 mt-1">{selected.description}</p>
+            )}
+            {errors.businessType && (
+              <p className="text-xs text-error">{errors.businessType.message}</p>
+            )}
+          </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-sm text-charcoal-500">
-            Tipo de negocio
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 rounded-full border-charcoal-300 accent-primary"
+              {...register("acceptTerms")}
+            />
+            <span className="text-sm text-charcoal-700">
+              He leído y acepto los{" "}
+              <a href="#" className="text-primary hover:text-primary-hover underline">
+                términos y condiciones
+              </a>{" "}
+              de WeOut.
+            </span>
           </label>
-          <select
-            className="w-full rounded-lg border border-charcoal-200 bg-white px-4 py-3 text-sm text-charcoal-900 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-            {...register("businessType")}
-          >
-            <option value="">Selecciona una opción</option>
-            {businessTypes.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          {errors.businessType && (
-            <p className="text-xs text-error">{errors.businessType.message}</p>
+          {errors.acceptTerms && (
+            <p className="text-xs text-error -mt-4">{errors.acceptTerms.message}</p>
           )}
         </div>
-
-        <Input
-          label="Nombre de contacto"
-          placeholder="Tu nombre completo"
-          error={errors.contactName?.message}
-          {...register("contactName")}
-        />
-
-        <Input
-          label="Correo electrónico"
-          type="email"
-          placeholder="tu@negocio.com"
-          error={errors.email?.message}
-          {...register("email")}
-        />
-
-        <Input
-          label="Teléfono"
-          type="tel"
-          placeholder="+57 300 123 4567"
-          error={errors.phone?.message}
-          {...register("phone")}
-        />
-
-        <Input
-          label="Sitio web (opcional)"
-          placeholder="https://tunegocio.com"
-          error={errors.website?.message}
-          {...register("website")}
-        />
-
-        <div className="pt-4">
-          <Button type="submit" loading={isSubmitting}>
-            Continuar
-          </Button>
-        </div>
-      </form>
-    </div>
+      </VerificationLayout>
+    </form>
   );
 }

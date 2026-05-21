@@ -14,15 +14,22 @@ function getDeviceId(): string {
     return id;
 }
 
+function getToken(): string {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("access_token") ?? "";
+}
+
 async function request<T>(
     path: string,
     options: RequestInit = {}
 ): Promise<T> {
+    const token = getToken();
     const res = await fetch(`${API_URL}${path}`, {
         ...options,
         headers: {
             "Content-Type": "application/json",
             "x-device-id": getDeviceId(),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options.headers,
         },
     });
@@ -70,5 +77,73 @@ export function login(input: { email: string; password: string }) {
     return request<LoginResult>("/business-auth/login", {
         method: "POST",
         body: JSON.stringify(input),
+    });
+}
+
+// ── Business Verification ──
+
+export type VerificationInput = {
+    businessName: string;
+    businessType: string;
+    street?: string;
+    apt?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    lat?: number;
+    lng?: number;
+    isAffiliated: boolean;
+    affiliationName?: string;
+    description?: string;
+};
+
+export type BusinessDocument = {
+    id: string;
+    fileName: string;
+    filePath: string;
+    mimeType: string | null;
+};
+
+export type VerificationResult = {
+    id: string;
+    businessId: string;
+    status: "Pending" | "Approved" | "Rejected";
+    documents: BusinessDocument[];
+};
+
+export function submitVerification(input: VerificationInput) {
+    return request<VerificationResult>("/business/verification", {
+        method: "POST",
+        body: JSON.stringify(input),
+    });
+}
+
+export function getVerificationStatus() {
+    return request<VerificationResult | null>("/business/verification");
+}
+
+export async function uploadDocument(file: File): Promise<BusinessDocument> {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_URL}/business/verification/upload`, {
+        method: "POST",
+        headers: {
+            "x-device-id": getDeviceId(),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+    });
+
+    const json: ApiResponse<BusinessDocument> = await res.json();
+    if (!json.ok) throw new Error(json.error.message);
+    return json.result as BusinessDocument;
+}
+
+export function deleteDocument(docId: string) {
+    return request<null>(`/business/verification/documents/${docId}`, {
+        method: "DELETE",
     });
 }
