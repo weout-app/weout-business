@@ -51,6 +51,15 @@ export default function DashboardPage() {
     );
   }
 
+  const typeLabels: Record<string, string> = {
+    hostel: "Hostel",
+    tour_guide: "Guía turístico",
+    hotel: "Hotel / Alojamiento",
+    agency: "Agencia de viajes",
+    restaurant: "Restaurante / Bar",
+    other: "Otro",
+  };
+
   const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
     Pending: {
       label: "Pendiente",
@@ -132,7 +141,7 @@ export default function DashboardPage() {
               <div className="sm:col-span-3">
                 <p className="text-xs text-charcoal-500 sm:hidden mb-0.5">Tipo</p>
                 <span className="inline-block px-3 py-1 rounded-full bg-charcoal-50 text-xs font-medium text-charcoal-700">
-                  {verification.businessType || "—"}
+                  {typeLabels[verification.businessType ?? ""] || verification.businessType || "—"}
                 </span>
               </div>
 

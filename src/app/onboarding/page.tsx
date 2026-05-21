@@ -144,6 +144,7 @@ export default function OnboardingPage() {
                 {step.actionLabel && (
                   <button
                     disabled={step.locked}
+                    onClick={() => !step.locked && router.push("/activities/create")}
                     className="mt-4 px-5 py-2 rounded-full border border-charcoal-200 text-xs font-medium text-charcoal-500 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {step.actionLabel}
