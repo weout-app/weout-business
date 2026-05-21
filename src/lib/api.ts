@@ -109,6 +109,8 @@ export type VerificationResult = {
     id: string;
     businessId: string;
     status: "Pending" | "Approved" | "Rejected";
+    businessName?: string;
+    businessType?: string;
     documents: BusinessDocument[];
 };
 

@@ -236,7 +236,7 @@ export default function ReviewPage() {
 
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/onboarding")}
               className="mt-6 w-full rounded-full bg-primary text-white py-3.5 text-sm font-semibold hover:bg-primary-hover transition-colors"
             >
               ¡Entendido!
