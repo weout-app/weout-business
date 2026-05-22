@@ -149,3 +149,37 @@ export function deleteDocument(docId: string) {
         method: "DELETE",
     });
 }
+
+// ── Business Plans ──
+
+export type PlanResult = {
+    id: string;
+    title: string;
+    description: string;
+    activityType: string;
+    scheduledAt: string;
+    status: string;
+    coverPath: string | null;
+    maxParticipants: number | null;
+    totalReservations: number;
+};
+
+export async function createPlan(formData: FormData): Promise<PlanResult> {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/business/plans`, {
+        method: "POST",
+        headers: {
+            "x-device-id": getDeviceId(),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+    });
+
+    const json: ApiResponse<PlanResult> = await res.json();
+    if (!json.ok) throw new Error(json.error.message);
+    return json.result as PlanResult;
+}
+
+export function getBusinessPlans() {
+    return request<PlanResult[]>("/business/plans");
+}

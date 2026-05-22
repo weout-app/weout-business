@@ -12,8 +12,6 @@ import {
   Search,
   MapPin,
   LocateFixed,
-  Upload,
-  Calendar,
   ChevronDown,
   X,
 } from "lucide-react";
@@ -21,13 +19,19 @@ import {
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 const activityTypes = [
-  "Aventura", "Cultura", "Naturaleza", "Noche", "Playa",
-  "Bocados locales", "Vida silvestre", "Estrellas", "Correr",
-  "Senderismo", "Ciclismo", "Pendientes", "Buceo",
-];
-
-const languages = [
-  "Español", "Inglés", "Portugués", "Francés", "Alemán", "Italiano", "Holandés", "Mandarín", "Japonés", "Coreano",
+  { value: "Aventura", label: "🏔️ Aventura" },
+  { value: "Cultura", label: "🎭 Cultura" },
+  { value: "Naturaleza", label: "🌿 Naturaleza" },
+  { value: "Noche", label: "🌙 Noche" },
+  { value: "Playa", label: "🏖️ Playa" },
+  { value: "Bocados_locales", label: "🍽️ Bocados locales" },
+  { value: "Vida_silvestre", label: "🦜 Vida silvestre" },
+  { value: "Estrellas", label: "⭐ Estrellas" },
+  { value: "Correr", label: "🏃 Correr" },
+  { value: "Senderismo", label: "🥾 Senderismo" },
+  { value: "Ciclismo", label: "🚴 Ciclismo" },
+  { value: "Pendientes", label: "🏂 Pendientes" },
+  { value: "Buceo", label: "🤿 Buceo" },
 ];
 
 interface Suggestion {
@@ -50,10 +54,11 @@ export default function CreateActivityPage() {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [repeat, setRepeat] = useState("none");
+  const [repeatType, setRepeatType] = useState("none");
+  const [repeatDays, setRepeatDays] = useState<string[]>([]);
+  const [repeatMonthly, setRepeatMonthly] = useState("first");
   const [capacity, setCapacity] = useState("");
   const [allowWaitlist, setAllowWaitlist] = useState(false);
-  const [language, setLanguage] = useState("");
   const [pricingType, setPricingType] = useState("free");
   const [price, setPrice] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -137,22 +142,47 @@ export default function CreateActivityPage() {
     } catch {}
   }
 
-  function toggleInterest(interest: string) {
+  function toggleInterest(value: string) {
     setSelectedInterests((prev) =>
-      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+      prev.includes(value) ? prev.filter((i) => i !== value) : [...prev, value]
     );
   }
 
   async function handleSubmit() {
     setSubmitting(true);
-    // TODO: POST to backend
-    console.log("Create plan:", {
-      title, description, date, time, repeat, capacity, allowWaitlist,
-      language, pricingType, price, selectedInterests,
-      locationLat, locationLng, locationAddress,
-    });
-    setSubmitting(false);
-    router.push("/dashboard");
+    try {
+      const scheduledAt = new Date(`${date}T${time}`).toISOString();
+
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("activityType", selectedInterests[0] || "Aventura");
+      formData.append("scheduledAt", scheduledAt);
+      formData.append("locationLat", String(locationLat));
+      formData.append("locationLong", String(locationLng));
+      if (locationAddress) formData.append("locationAddress", locationAddress);
+      if (capacity) formData.append("maxParticipants", capacity);
+      formData.append("privacy", "Public");
+      if (repeatType !== "none") formData.append("repeatType", repeatType);
+      if (repeatDays.length > 0) formData.append("repeatDays", repeatDays.join(","));
+      if (repeatMonthly) formData.append("repeatMonthly", repeatMonthly);
+      if (selectedInterests.length > 0) {
+        selectedInterests.forEach((i) => formData.append("interests[]", i));
+      }
+
+      // Add cover photo
+      const coverInput = fileInputRef.current;
+      if (coverInput?.files?.[0]) {
+        formData.append("cover", coverInput.files[0]);
+      }
+
+      const { createPlan } = await import("@/lib/api");
+      await createPlan(formData);
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Create plan failed:", err.message);
+      setSubmitting(false);
+    }
   }
 
   const inputClass = "w-full rounded-xl border border-charcoal-100 bg-white px-4 py-3.5 text-sm text-charcoal-900 placeholder:text-charcoal-300 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -167,7 +197,7 @@ export default function CreateActivityPage() {
           </Link>
         </div>
         <h1 className="text-sm font-semibold text-charcoal-900 absolute left-1/2 -translate-x-1/2">
-          Crear nuevo plan
+          Crear nueva experiencia
         </h1>
         <div className="flex items-center gap-3">
           <button className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full border border-charcoal-200 text-sm text-charcoal-700">
@@ -265,17 +295,108 @@ export default function CreateActivityPage() {
           <div className="mt-3">
             <div className="flex items-center justify-between rounded-xl border border-charcoal-100 bg-white px-4 py-3.5">
               <span className="text-sm text-charcoal-500">¿Repetir esta actividad?</span>
-              <select
-                value={repeat}
-                onChange={(e) => setRepeat(e.target.value)}
-                className="text-sm text-charcoal-900 bg-transparent outline-none appearance-none text-right pr-1"
-              >
-                <option value="none">Ninguna</option>
-                <option value="daily">Diario</option>
-                <option value="weekly">Semanal</option>
-                <option value="monthly">Mensual</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={repeatType}
+                  onChange={(e) => { setRepeatType(e.target.value); setRepeatDays([]); }}
+                  className="text-sm text-charcoal-900 bg-transparent outline-none appearance-none pr-5 cursor-pointer"
+                >
+                  <option value="none">No repetir</option>
+                  <option value="same_day">Cada semana este día</option>
+                  <option value="daily">Todos los días</option>
+                  <option value="weekly">Días específicos</option>
+                  <option value="monthly_date">Mismo día del mes</option>
+                  <option value="monthly_week">Misma semana del mes</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-charcoal-400 pointer-events-none" />
+              </div>
             </div>
+
+            {/* Same day — shows which day */}
+            {repeatType === "same_day" && date && (
+              <div className="mt-3 px-4 py-3 rounded-xl bg-primary-light/50 border border-primary/20">
+                <p className="text-sm text-charcoal-900">
+                  Se repetirá cada <span className="font-semibold">{new Date(date + "T12:00:00").toLocaleDateString("es", { weekday: "long" })}</span>
+                </p>
+              </div>
+            )}
+
+            {/* Weekly — pick days */}
+            {repeatType === "weekly" && (
+              <div className="mt-3 p-4 rounded-xl border border-charcoal-100 bg-white">
+                <p className="text-xs text-charcoal-500 mb-2">Selecciona los días</p>
+                <div className="flex gap-1.5">
+                  {[
+                    { key: "mon", label: "Lu" },
+                    { key: "tue", label: "Ma" },
+                    { key: "wed", label: "Mi" },
+                    { key: "thu", label: "Ju" },
+                    { key: "fri", label: "Vi" },
+                    { key: "sat", label: "Sá" },
+                    { key: "sun", label: "Do" },
+                  ].map((day) => (
+                    <button
+                      key={day.key}
+                      type="button"
+                      onClick={() =>
+                        setRepeatDays((prev) =>
+                          prev.includes(day.key) ? prev.filter((d) => d !== day.key) : [...prev, day.key]
+                        )
+                      }
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        repeatDays.includes(day.key)
+                          ? "bg-primary text-white"
+                          : "bg-charcoal-50 text-charcoal-500 hover:bg-charcoal-100"
+                      }`}
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Monthly by date — e.g. every 15th */}
+            {repeatType === "monthly_date" && date && (
+              <div className="mt-3 px-4 py-3 rounded-xl bg-primary-light/50 border border-primary/20">
+                <p className="text-sm text-charcoal-900">
+                  Se repetirá el <span className="font-semibold">{new Date(date + "T12:00:00").getDate()}</span> de cada mes
+                </p>
+              </div>
+            )}
+
+            {/* Monthly by week — e.g. first Friday */}
+            {repeatType === "monthly_week" && (
+              <div className="mt-3 p-4 rounded-xl border border-charcoal-100 bg-white">
+                <p className="text-xs text-charcoal-500 mb-2">¿Cuál semana del mes?</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "first", label: "Primer" },
+                    { key: "second", label: "Segundo" },
+                    { key: "third", label: "Tercer" },
+                    { key: "last", label: "Último" },
+                  ].map((opt) => {
+                    const dayName = date
+                      ? new Date(date + "T12:00:00").toLocaleDateString("es", { weekday: "long" })
+                      : "día";
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setRepeatMonthly(opt.key)}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                          repeatMonthly === opt.key
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-charcoal-700 border-charcoal-100 hover:border-charcoal-300"
+                        }`}
+                      >
+                        {opt.label} {dayName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -358,29 +479,10 @@ export default function CreateActivityPage() {
             <button
               type="button"
               onClick={() => setAllowWaitlist(!allowWaitlist)}
-              className={`w-10 h-6 rounded-full transition-colors ${allowWaitlist ? "bg-primary" : "bg-charcoal-200"}`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${allowWaitlist ? "bg-primary" : "bg-charcoal-200"}`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${allowWaitlist ? "translate-x-4.5 ml-[18px]" : "ml-[2px]"}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${allowWaitlist ? "translate-x-5" : "translate-x-0"}`} />
             </button>
-          </div>
-        </div>
-
-        {/* Language */}
-        <div className="mt-6">
-          <label className="text-sm font-medium text-charcoal-900">Idioma<span className="text-error">*</span></label>
-          <div className="mt-2 relative">
-            <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal-400" />
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className={`${inputClass} pl-10 appearance-none pr-10`}
-            >
-              <option value="">Elige un idioma</option>
-              {languages.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal-400 pointer-events-none" />
           </div>
         </div>
 
@@ -389,14 +491,17 @@ export default function CreateActivityPage() {
           <label className="text-sm font-medium text-charcoal-900">Precio<span className="text-error">*</span></label>
           <div className="mt-2 flex items-center justify-between rounded-xl border border-charcoal-100 bg-white px-4 py-3.5">
             <span className="text-sm text-charcoal-500">Tipo de precio</span>
-            <select
-              value={pricingType}
-              onChange={(e) => setPricingType(e.target.value)}
-              className="text-sm font-medium text-primary bg-transparent outline-none appearance-none text-right"
-            >
-              <option value="free">Gratis</option>
-              <option value="paid">De pago</option>
-            </select>
+            <div className="relative">
+              <select
+                value={pricingType}
+                onChange={(e) => setPricingType(e.target.value)}
+                className="text-sm font-medium text-primary bg-transparent outline-none appearance-none pr-5 cursor-pointer"
+              >
+                <option value="free">Gratis</option>
+                <option value="paid">De pago</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
+            </div>
           </div>
           {pricingType === "paid" && (
             <input
@@ -416,16 +521,16 @@ export default function CreateActivityPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             {activityTypes.map((interest) => (
               <button
-                key={interest}
+                key={interest.value}
                 type="button"
-                onClick={() => toggleInterest(interest)}
+                onClick={() => toggleInterest(interest.value)}
                 className={`px-4 py-2 rounded-full text-xs font-medium border transition-colors ${
-                  selectedInterests.includes(interest)
+                  selectedInterests.includes(interest.value)
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-charcoal-700 border-charcoal-100 hover:border-charcoal-300"
                 }`}
               >
-                {interest}
+                {interest.label}
               </button>
             ))}
           </div>
@@ -439,7 +544,7 @@ export default function CreateActivityPage() {
           disabled={submitting || !title || !description || !date || !time || !locationAddress}
           className="px-6 py-2.5 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {submitting ? "Creando..." : "Crear plan"}
+          {submitting ? "Creando..." : "Crear experiencia"}
         </button>
       </footer>
     </div>
