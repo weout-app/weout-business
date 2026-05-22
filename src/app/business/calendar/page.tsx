@@ -95,14 +95,58 @@ export default function CalendarPage() {
     cells.push({ day: d, isCurrentMonth: false, date: new Date(currentYear, currentMonth + 1, d) });
   }
 
-  // Group plans by date
+  const dayKeyMap: Record<string, number> = {
+    sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+  };
+
+  function doesPlanOccurOn(plan: PlanResult, date: Date): boolean {
+    const start = new Date(plan.scheduledAt);
+    const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    // Don't show before the plan started
+    if (checkDate < startDate) return false;
+
+    // Exact match — always show
+    if (checkDate.getTime() === startDate.getTime()) return true;
+
+    if (!plan.repeatType || plan.repeatType === "none") return false;
+
+    if (plan.repeatType === "daily") return true;
+
+    if (plan.repeatType === "same_day") {
+      return date.getDay() === start.getDay();
+    }
+
+    if (plan.repeatType === "weekly" && plan.repeatDays) {
+      const days = plan.repeatDays.split(",");
+      return days.some((d) => dayKeyMap[d] === date.getDay());
+    }
+
+    if (plan.repeatType === "monthly_date") {
+      return date.getDate() === start.getDate();
+    }
+
+    if (plan.repeatType === "monthly_week" && plan.repeatMonthly) {
+      if (date.getDay() !== start.getDay()) return false;
+      const weekOfMonth = Math.ceil(date.getDate() / 7);
+      const lastDay = getDaysInMonth(date.getFullYear(), date.getMonth());
+      const isLastWeek = date.getDate() > lastDay - 7;
+
+      switch (plan.repeatMonthly) {
+        case "first": return weekOfMonth === 1;
+        case "second": return weekOfMonth === 2;
+        case "third": return weekOfMonth === 3;
+        case "last": return isLastWeek;
+        default: return false;
+      }
+    }
+
+    return false;
+  }
+
   function getPlansForDate(date: Date): PlanResult[] {
-    return plans.filter((p) => {
-      const pd = new Date(p.scheduledAt);
-      return pd.getFullYear() === date.getFullYear() &&
-        pd.getMonth() === date.getMonth() &&
-        pd.getDate() === date.getDate();
-    });
+    return plans.filter((p) => doesPlanOccurOn(p, date));
   }
 
   function prevMonth() {

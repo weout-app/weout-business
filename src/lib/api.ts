@@ -163,6 +163,9 @@ export type PlanResult = {
     locationAddress: string | null;
     maxParticipants: number | null;
     totalReservations: number;
+    repeatType: string | null;
+    repeatDays: string | null;
+    repeatMonthly: string | null;
 };
 
 export async function createPlan(formData: FormData): Promise<PlanResult> {
