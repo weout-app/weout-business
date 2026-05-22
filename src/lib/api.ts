@@ -160,6 +160,7 @@ export type PlanResult = {
     scheduledAt: string;
     status: string;
     coverPath: string | null;
+    locationAddress: string | null;
     maxParticipants: number | null;
     totalReservations: number;
 };

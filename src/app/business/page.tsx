@@ -116,7 +116,10 @@ export default function BusinessDetailPage() {
         <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h2 className="text-lg font-bold text-charcoal-900">Mis experiencias</h2>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-charcoal-200 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors">
+            <button
+              onClick={() => router.push("/business/calendar")}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-charcoal-200 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors"
+            >
               <Calendar size={14} /> Calendario
             </button>
             <button

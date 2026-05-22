@@ -183,6 +183,7 @@ export default function CreateActivityPage() {
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Create plan failed:", err.message);
+      alert("Error al crear la experiencia: " + err.message);
       setSubmitting(false);
     }
   }
