@@ -156,7 +156,7 @@ export default function DashboardPage() {
               {/* Actions */}
               <div className="sm:col-span-3 flex items-center justify-end gap-2">
                 <button
-                  onClick={() => router.push("/onboarding")}
+                  onClick={() => router.push("/business")}
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-charcoal-200 text-xs font-medium text-charcoal-700 hover:bg-charcoal-50 transition-colors"
                 >
                   <Eye size={14} /> Ver detalles

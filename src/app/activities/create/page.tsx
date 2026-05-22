@@ -73,6 +73,7 @@ export default function CreateActivityPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const updateMarker = useCallback((lng: number, lat: number) => {
     if (!map.current) return;
@@ -178,7 +179,8 @@ export default function CreateActivityPage() {
 
       const { createPlan } = await import("@/lib/api");
       await createPlan(formData);
-      router.push("/dashboard");
+      setSubmitting(false);
+      setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Create plan failed:", err.message);
       setSubmitting(false);
@@ -547,6 +549,48 @@ export default function CreateActivityPage() {
           {submitting ? "Creando..." : "Crear experiencia"}
         </button>
       </footer>
+
+      {/* Success modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl w-full max-w-sm mx-4 p-8 text-center relative">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="absolute top-4 right-4 text-charcoal-900 hover:text-charcoal-500"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex justify-center mb-6 mt-2">
+              <div className="w-24 h-24 rounded-3xl bg-primary-light flex items-center justify-center">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <path d="M14 24l8 8 14-16" stroke="#219F56" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-bold text-charcoal-900">
+              ¡Experiencia creada!
+            </h2>
+            <p className="mt-3 text-sm text-charcoal-500">
+              Has creado tu experiencia <span className="text-primary font-medium">{title}</span> exitosamente. ¡Todo listo!
+            </p>
+
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mt-6 w-full rounded-full bg-primary text-white py-3.5 text-sm font-semibold hover:bg-primary-hover transition-colors"
+            >
+              Listo
+            </button>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mt-3 w-full flex items-center justify-center gap-1 text-sm font-semibold text-charcoal-900 hover:text-charcoal-700 transition-colors"
+            >
+              Ver chat <ChevronDown size={14} className="-rotate-90" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
