@@ -183,3 +183,45 @@ export async function createPlan(formData: FormData): Promise<PlanResult> {
 export function getBusinessPlans() {
     return request<PlanResult[]>("/business/plans");
 }
+
+// ── Business Chats ──
+
+export type ChatPreview = {
+    id: string;
+    planId: string | null;
+    planTitle: string;
+    planCover: string | null;
+    memberCount: number;
+    memberNames: string[];
+    lastMessage: {
+        content: string;
+        senderName: string;
+        time: string;
+    } | null;
+    updatedAt: string;
+};
+
+export type ChatMessage = {
+    id: string;
+    content: string;
+    time: string;
+    isOwn: boolean;
+    senderName: string;
+    senderAvatar: string | null;
+    senderId: string | null;
+};
+
+export function getBusinessChats() {
+    return request<ChatPreview[]>("/business/chats");
+}
+
+export function getChatMessages(chatId: string) {
+    return request<ChatMessage[]>(`/business/chats/${chatId}/messages`);
+}
+
+export function sendChatMessage(chatId: string, content: string) {
+    return request<ChatMessage>(`/business/chats/${chatId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+    });
+}

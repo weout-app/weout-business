@@ -583,7 +583,7 @@ export default function CreateActivityPage() {
               Listo
             </button>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/messages")}
               className="mt-3 w-full flex items-center justify-center gap-1 text-sm font-semibold text-charcoal-900 hover:text-charcoal-700 transition-colors"
             >
               Ver chat <ChevronDown size={14} className="-rotate-90" />

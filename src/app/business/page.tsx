@@ -212,7 +212,10 @@ export default function BusinessDetailPage() {
                       </span>
                     </div>
 
-                    <button className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-full border border-charcoal-100 text-sm font-medium text-primary hover:bg-charcoal-50 transition-colors">
+                    <button
+                      onClick={() => router.push("/messages")}
+                      className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-full border border-charcoal-100 text-sm font-medium text-primary hover:bg-charcoal-50 transition-colors"
+                    >
                       Ver chat <ChevronRight size={14} />
                     </button>
                   </div>
